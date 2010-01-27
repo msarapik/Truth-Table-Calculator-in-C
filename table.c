@@ -13,15 +13,11 @@ short implication(int a, int b);
 short equivalence(int a, int b);
 int literals(char *s);
 int check_existing(char c, char *a, int elements);
-//int literal_values(int rows, int col_nr, int array);
 
 int main() {
   char input[10];
   printf("Sisesta valem: ");
   scanf("%[\040A-Zv&<=>]", input);
-
-  //int a[4] = {1, 1, 0, 0};
-  //int b[4] = {1, 0, 1, 0};
 
   int nr_of_literals;
   nr_of_literals = literals(input);
