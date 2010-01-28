@@ -11,28 +11,35 @@ short conjunction(int a, int b);
 short disjunction(int a, int b);
 short implication(int a, int b);
 short equivalence(int a, int b);
-int literals(char *s);
+char *literals(char *s);
 int check_existing(char c, char *a, int elements);
+int calculate(int *a, int rows, int columns, char *s, int row);
 
 int main() {
   char input[10];
   printf("Sisesta valem: ");
   scanf("%[\040A-Zv&<=>]", input);
 
-  int nr_of_literals;
-  nr_of_literals = literals(input);
+  // Finds the number of literals, the rows count and creates an according array
+  int nr_of_literals = 0;
+  char *return_array = literals(input);
+
+  // Finds out the total number of literals
+  while(*return_array != 0) {
+    return_array++;
+    nr_of_literals++;
+  }
+
   int rows = (int)pow(2, nr_of_literals);
   int array[nr_of_literals][rows];
 
   int i;
   int j;
   int k;
-  int l;
-  int r;
   // Fills the variables array with true/false values
   for (i = 0; i < nr_of_literals; i++) {
-    l = 0;
-    r = 0;
+    int l = 0;
+    int r = 0;
     int tmp = rows / (int)pow(2, i + 1);
     for (k = 0; k < (int)pow(2, i); k++) {
       for (j = l; j < r + tmp; j++) {
@@ -47,11 +54,6 @@ int main() {
       r = l;
     }
   }
-
-  // Prints out the header of the truth table
-  //printf("------------\n");
-  //printf("A B | %s\n", input);
-  //printf("------------\n");
 
   // Prints out the truth table
   //for (i = 0; i < 4; i++) {
@@ -73,7 +75,7 @@ int main() {
     }
   }
 
-  // Prints out the 2nd header
+  // Prints out the header
   printf("===========================\n");
   for (i = 0; i < nr_of_literals; i++) {
     printf("%c ", literals[i]);
@@ -86,8 +88,22 @@ int main() {
     for (i = 0; i < nr_of_literals; i++) {
       printf("%i ", array[i][j]);
     }
-    printf("|\n");
+
+    printf("| ");
+    calculate(&array[0][0], rows, nr_of_literals, input, j);
   }
+  printf("\n");
+
+  return 0;
+}
+
+// Calculates the boolean values of the formula depending on the values of the literals
+int calculate(int *a, int rows, int columns, char *s, int row) {
+  int j;
+  for (j = 0; j < strlen(s); j++) {
+    printf("+");
+  }
+
   printf("\n");
 
   return 0;
@@ -95,25 +111,29 @@ int main() {
 
 // Counts the alphabetic characters in the input formula and returns that number
 // does not increase the count if the character repeats
-int literals(char *s) {
-  char *p = s;
+char *literals(char *s) {
   char array[10];
   int elements = 0;
-  int i = 0;
-  while (*p != '\0') {
-    char c = *p;
-    p++;
+  while (*s != '\0') {
+    char c = *s;
+    s++;
 
-    if (c != 118 && c != 86 && isalpha(c) != 0) {
+    if (c != 'V' && c != 'v' && isalpha(c) != 0) {
       if (check_existing(c, array, elements) == 0) {
         array[elements] = c;
-        i++;
         elements++;
       }
     }
   }
     
-  return i;
+  char *literals = NULL;
+  literals = (char *)malloc(elements);
+  int i;
+  for (i = 0; i < elements; i++) {
+    literals[i] = array[i];
+  }
+
+  return literals;
 }
 
 // Checks if the element exists in the given array
