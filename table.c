@@ -6,15 +6,12 @@
 #include <ctype.h>
 #include <math.h>
 
-short operation(char *f, int a, int b);
-short conjunction(int a, int b);
-short disjunction(int a, int b);
-short implication(int a, int b);
-short equivalence(int a, int b);
 char *literals(char *s);
 char *convert_input(char *formula);
-char value_literals(char *formula, int *values, char *literals, int line);
+char *value_literals(int formula_size, char *formula, int *values, char *literals, int line);
 int check_existing(char c, char *a, int elements);
+int calculate(char *formula);
+int operation(char symbol, int el1, int el2);
 
 int main() {
   char input[10];
@@ -70,11 +67,7 @@ int main() {
 
   // Converts the input and gets the new size of the converted formula
   char *formula = convert_input(input);
-  int formula_size = 0;
-  while(*formula != 0) {
-    formula++;
-    formula_size++;
-  }
+  int formula_size = strlen(formula);
 
   // Prints out the full array
   for (i = 0; i < rows; i++) {
@@ -85,22 +78,111 @@ int main() {
     printf("| ");
 
     // Prints out the formulas with the boolean of the literals
-    value_literals(formula, array[i], literals, nr_of_literals);
+
+    char *tmp;
+    tmp = value_literals(formula_size, formula, array[i], literals, nr_of_literals);
+    printf("%i", calculate(tmp));
   }
   printf("\n");
 
   return 0;
 }
 
-// Replaces the literals in the formula with their corresponding boolean values
-char value_literals(char *formula, int *values, char *literals, int nr_of_literals) {
-  int i;
-  for (i = 0; i < nr_of_literals; i++) {
-    printf("-- %i", values[i]);
-  }
-  printf("\n");
+// Calculates the boolen values and prints out the result
+int calculate(char *formula) {
+  char operations[] = {'&', 'v', '>', '='};
 
-  return 0;
+  // Makes a copy of the formula
+  char *new_formula = NULL;
+  int formula_size = strlen(formula);
+
+  int i;
+  for (i = 0; i < 5; i++) {
+    printf("%i\n", formula[i]);
+  }
+  // Returns the value of the formula if it has a size of 1
+  if (formula_size == 1) { return formula[0]; }
+
+  // Creates an array for the new formula
+  new_formula = (char *)malloc(formula_size - 2);
+
+  char symbol;// = NULL; // The symbol of the operation
+  //int i;
+  int j;
+  int el1;
+  int el2;
+  for (i = 0; i < 4; i++) { // 4 comes from the number of different operations
+    for (j = 0; j < formula_size; j++) {
+      if (formula[j] == operations[i]) {
+        symbol = operations[i];
+        el1 = j - 1;
+        el2 = j + 1;
+        break;
+      }
+    }
+
+    if (symbol) { break; }
+  }
+ 
+  int val;
+  val = operation(symbol, formula[el1], formula[el2]);
+
+  i = 0;
+  for (j = 0; j < formula_size; j++) {
+    if (j >= el1 && j <= el2) {
+      if (j == el1) { 
+        new_formula[i] = val; 
+        i++;
+      }
+    } else {
+      new_formula[i] = formula[j];
+      i++;
+    }
+  }
+
+  return calculate(new_formula);
+}
+
+// Performs the operation between el1 and el2
+int operation(char symbol, int el1, int el2) {
+  int val;
+  switch(symbol) {
+    case '&': 
+      val = el1 && el2;
+      break;
+    case 'v': 
+      val = el1 || el2;
+      break;
+    case '>': 
+      val = !el1 || el2;
+      break;
+    case '=': 
+      val = el1 == el2;
+      break;
+    default:
+      printf("APPI!");
+      break;
+  }
+
+  return val;
+}
+
+// Replaces the literals in the formula with their corresponding boolean values
+char *value_literals(int formula_size, char *formula, int *values, char *literals, int nr_of_literals) {
+  char *bumpala = NULL;
+  bumpala = (char *)malloc(formula_size);
+  strcpy(bumpala, formula);
+  int i;
+  int j;
+  for (i = 0; i < formula_size ; i++) {
+    for (j = 0; j < nr_of_literals; j++) {
+      if (bumpala[i] == literals[j]) {
+        bumpala[i] = values[j];
+      }
+    }
+  }
+
+  return bumpala;
 }
 
 // Converts the input formula into an array and removes any spaces
@@ -161,29 +243,4 @@ int check_existing(char c, char *a, int elements) {
   }
 
   return 1;
-}
-
-// Checks the input for any logical operation marks and calls the correspondent function
-short operation(char *f, int a, int b) {
-  if (strstr(f, "&")) return conjunction(a, b);
-  if (strstr(f, "v")) return disjunction(a, b);
-  if (strstr(f, "<=>")) return equivalence(a, b);
-  if (strstr(f, "=>")) return implication(a, b);
-  return 0;
-}
-
-short conjunction(int a, int b) {
-  return (a == 1 && b == 1);
-}
-
-short disjunction(int a, int b) {
-  return (a == 1 || b == 1);
-}
-
-short implication(int a, int b) {
-  return (a == 0 || conjunction(a, b));
-}
-
-short equivalence(int a, int b) {
-  return (a == b);
 }
