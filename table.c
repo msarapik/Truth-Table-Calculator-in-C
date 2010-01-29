@@ -12,8 +12,9 @@ short disjunction(int a, int b);
 short implication(int a, int b);
 short equivalence(int a, int b);
 char *literals(char *s);
+char *convert_input(char *formula);
+char value_literals(char *formula, int *values, char *literals, int line);
 int check_existing(char c, char *a, int elements);
-int calculate(int *a, int rows, int columns, char *s, int row);
 
 int main() {
   char input[10];
@@ -31,34 +32,18 @@ int main() {
   }
 
   int rows = (int)pow(2, nr_of_literals);
-  int array[nr_of_literals][rows];
+  int array[rows][nr_of_literals];
 
   int i;
   int j;
-  int k;
+  
   // Fills the variables array with true/false values
-  for (i = 0; i < nr_of_literals; i++) {
-    int l = 0;
-    int r = 0;
-    int tmp = rows / (int)pow(2, i + 1);
-    for (k = 0; k < (int)pow(2, i); k++) {
-      for (j = l; j < r + tmp; j++) {
-        array[i][j] = 1;
-        l++;
-      }
-      r = l;
-      for (j = r; j < r + tmp; j++) {
-        array[i][j] = 0;
-        l++;
-      }
-      r = l;
+  for (i = rows - 1; i >= 0; i--) {
+    for (j = nr_of_literals; j > 0; j--) {
+      int val = (i % (int)pow(2, j)) / (int)(pow(2, j) / 2);
+      array[rows - 1 - i][nr_of_literals - j] = val;
     }
   }
-
-  // Prints out the truth table
-  //for (i = 0; i < 4; i++) {
-  //  printf("%i %i | %i %i %i\n", a[i], b[i], a[i], operation(input, a[i], b[i]), b[i]);
-  //}
 
   // Extracts the literals from the input
   char* s = input;
@@ -66,7 +51,7 @@ int main() {
   int x = 0;
   while (*s != '\0') {
     for (i = 0; i < nr_of_literals; i++) {
-      if (isalpha(*s) && *s != 118 && *s != 86 && literals[i] != *s) {
+      if (isalpha(*s) && *s != 'v' && *s != 'V' && literals[i] != *s) {
         literals[x] = *s;
         x++;
       }
@@ -83,30 +68,57 @@ int main() {
   printf("| %s", input);
   printf("\n===========================\n");
 
+  // Converts the input and gets the new size of the converted formula
+  char *formula = convert_input(input);
+  int formula_size = 0;
+  while(*formula != 0) {
+    formula++;
+    formula_size++;
+  }
+
   // Prints out the full array
-  for (j = 0; j < rows; j++) {
-    for (i = 0; i < nr_of_literals; i++) {
+  for (i = 0; i < rows; i++) {
+    for (j = 0; j < nr_of_literals; j++) {
       printf("%i ", array[i][j]);
     }
 
     printf("| ");
-    calculate(&array[0][0], rows, nr_of_literals, input, j);
+
+    // Prints out the formulas with the boolean of the literals
+    value_literals(formula, array[i], literals, nr_of_literals);
   }
   printf("\n");
 
   return 0;
 }
 
-// Calculates the boolean values of the formula depending on the values of the literals
-int calculate(int *a, int rows, int columns, char *s, int row) {
-  int j;
-  for (j = 0; j < strlen(s); j++) {
-    printf("+");
+// Replaces the literals in the formula with their corresponding boolean values
+char value_literals(char *formula, int *values, char *literals, int nr_of_literals) {
+  int i;
+  for (i = 0; i < nr_of_literals; i++) {
+    printf("-- %i", values[i]);
   }
-
   printf("\n");
 
   return 0;
+}
+
+// Converts the input formula into an array and removes any spaces
+char *convert_input(char *formula) {
+  char *new_formula = NULL;
+  new_formula = (char *)malloc(sizeof(*formula));
+
+  int i = 0;
+  while (*formula != '\0') {
+    if (*formula != ' ') {
+      new_formula[i] = *formula;
+      i++;
+    }
+
+    formula++;
+  }
+ 
+  return new_formula;
 }
 
 // Counts the alphabetic characters in the input formula and returns that number
