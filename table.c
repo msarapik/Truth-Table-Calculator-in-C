@@ -6,54 +6,35 @@
 #include <ctype.h>
 #include <math.h>
 
-char *literals(char *s);
-char *convert_input(char *formula);
-char *value_literals(int formula_size, char *formula, int *values, char *literals, int line);
-int check_existing(char c, char *a, int elements);
-int calculate(char *formula);
+int find_nr_of_literals(char *input);
+int find_nr_of_valid_characters(char *input);
+void find_literals(char *output, char *input);
+void convert_input(char *output, char *input);
+void value_literals(char *output, char *formula, char *values, char *literals, int nr_of_literals, int formula_size);
+int check_existing(char character, char *formula);
+int calculate(char *formula, int formula_size);
 int operation(char symbol, int el1, int el2);
 
 int main() {
   char input[10];
   printf("Sisesta valem: ");
-  scanf("%[\040A-Zv&<=>]", input);
+  scanf("%[\040A-Zv&=>]", input);
 
   // Finds the number of literals, the rows count and creates an according array
-  int nr_of_literals = 0;
-  char *return_array = literals(input);
-
-  // Finds out the total number of literals
-  while(*return_array != 0) {
-    return_array++;
-    nr_of_literals++;
-  }
+  int nr_of_literals = find_nr_of_literals(input);
+  char literals[nr_of_literals];
+  find_literals(literals, input);
 
   int rows = (int)pow(2, nr_of_literals);
-  int array[rows][nr_of_literals];
+  char array[rows][nr_of_literals];
 
-  int i;
-  int j;
+  int i, j;
   
   // Fills the variables array with true/false values
   for (i = rows - 1; i >= 0; i--) {
     for (j = nr_of_literals; j > 0; j--) {
       int val = (i % (int)pow(2, j)) / (int)(pow(2, j) / 2);
       array[rows - 1 - i][nr_of_literals - j] = val;
-    }
-  }
-
-  // Extracts the literals from the input
-  char* s = input;
-  char literals[nr_of_literals];
-  int x = 0;
-  while (*s != '\0') {
-    for (i = 0; i < nr_of_literals; i++) {
-      if (isalpha(*s) && *s != 'v' && *s != 'V' && literals[i] != *s) {
-        literals[x] = *s;
-        x++;
-      }
-
-      s++;
     }
   }
 
@@ -66,8 +47,9 @@ int main() {
   printf("\n===========================\n");
 
   // Converts the input and gets the new size of the converted formula
-  char *formula = convert_input(input);
-  int formula_size = strlen(formula);
+  int nr_of_valid_characters = find_nr_of_valid_characters(input);
+  char formula[nr_of_valid_characters];
+  convert_input(formula, input);
 
   // Prints out the full array
   for (i = 0; i < rows; i++) {
@@ -78,10 +60,9 @@ int main() {
     printf("| ");
 
     // Prints out the formulas with the boolean of the literals
-
-    char *tmp;
-    tmp = value_literals(formula_size, formula, array[i], literals, nr_of_literals);
-    printf("%i", calculate(tmp));
+    char tmp[nr_of_valid_characters];    
+    value_literals(tmp, formula, array[i], literals, nr_of_literals, nr_of_valid_characters);
+    printf("  %i\n", calculate(tmp, nr_of_valid_characters));
   }
   printf("\n");
 
@@ -89,28 +70,18 @@ int main() {
 }
 
 // Calculates the boolen values and prints out the result
-int calculate(char *formula) {
+int calculate(char *formula, int formula_size) {
   char operations[] = {'&', 'v', '>', '='};
 
-  // Makes a copy of the formula
-  char *new_formula = NULL;
-  int formula_size = strlen(formula);
-
-  int i;
-  for (i = 0; i < 5; i++) {
-    printf("%i\n", formula[i]);
-  }
   // Returns the value of the formula if it has a size of 1
   if (formula_size == 1) { return formula[0]; }
 
   // Creates an array for the new formula
-  new_formula = (char *)malloc(formula_size - 2);
+  char new_formula[formula_size - 2];
 
-  char symbol;// = NULL; // The symbol of the operation
-  //int i;
-  int j;
-  int el1;
-  int el2;
+  int symbol = 0; // The symbol of the operation
+  int i, j;
+  int el1, el2;
   for (i = 0; i < 4; i++) { // 4 comes from the number of different operations
     for (j = 0; j < formula_size; j++) {
       if (formula[j] == operations[i]) {
@@ -121,11 +92,10 @@ int calculate(char *formula) {
       }
     }
 
-    if (symbol) { break; }
+    if (symbol != 0) { break; }
   }
- 
-  int val;
-  val = operation(symbol, formula[el1], formula[el2]);
+
+  int val = operation(symbol, formula[el1], formula[el2]);
 
   i = 0;
   for (j = 0; j < formula_size; j++) {
@@ -140,7 +110,7 @@ int calculate(char *formula) {
     }
   }
 
-  return calculate(new_formula);
+  return calculate(new_formula, formula_size - 2);
 }
 
 // Performs the operation between el1 and el2
@@ -160,7 +130,7 @@ int operation(char symbol, int el1, int el2) {
       val = el1 == el2;
       break;
     default:
-      printf("APPI!");
+      printf("APPI!\n");
       break;
   }
 
@@ -168,79 +138,85 @@ int operation(char symbol, int el1, int el2) {
 }
 
 // Replaces the literals in the formula with their corresponding boolean values
-char *value_literals(int formula_size, char *formula, int *values, char *literals, int nr_of_literals) {
-  char *bumpala = NULL;
-  bumpala = (char *)malloc(formula_size);
-  strcpy(bumpala, formula);
-  int i;
-  int j;
+void value_literals(char *output, char *formula, char *values, char* literals, int nr_of_literals, int formula_size) {
+  int i, j;
   for (i = 0; i < formula_size ; i++) {
+    output[i] = formula[i];
+
     for (j = 0; j < nr_of_literals; j++) {
-      if (bumpala[i] == literals[j]) {
-        bumpala[i] = values[j];
+      if (output[i] == literals[j]) {
+        output[i] = values[j];
       }
     }
   }
+}
 
-  return bumpala;
+int find_nr_of_valid_characters(char *input) {
+  int i;
+  int j = 0;
+  for (i = 0; i < strlen(input); i++) {
+    if (input[i] != ' ') {
+      j++;
+    }
+  }
+  return j;
 }
 
 // Converts the input formula into an array and removes any spaces
-char *convert_input(char *formula) {
-  char *new_formula = NULL;
-  new_formula = (char *)malloc(sizeof(*formula));
-
-  int i = 0;
-  while (*formula != '\0') {
-    if (*formula != ' ') {
-      new_formula[i] = *formula;
-      i++;
+void convert_input(char *output, char *input) {
+  int i;
+  int j = 0;
+  for (i = 0; i < strlen(input); i++) {
+    if (input[i] != ' ') {
+      output[j] = input[i];
+      j++;
     }
-
-    formula++;
   }
- 
-  return new_formula;
 }
 
 // Counts the alphabetic characters in the input formula and returns that number
 // does not increase the count if the character repeats
-char *literals(char *s) {
+int find_nr_of_literals(char *input) {
   char array[10];
+
   int elements = 0;
-  while (*s != '\0') {
-    char c = *s;
-    s++;
+  int i;
+  for (i = 0; i < strlen(input); i++) {
+    char c = input[i];
 
     if (c != 'V' && c != 'v' && isalpha(c) != 0) {
-      if (check_existing(c, array, elements) == 0) {
+      if (check_existing(c, array) == 0) {
         array[elements] = c;
         elements++;
       }
     }
   }
-    
-  char *literals = NULL;
-  literals = (char *)malloc(elements);
-  int i;
-  for (i = 0; i < elements; i++) {
-    literals[i] = array[i];
-  }
 
-  return literals;
+  return elements;
+}
+
+void find_literals(char *output, char *input) {
+  int elements = 0;
+  int i;
+  for (i = 0; i < strlen(input); i++) {
+    char c = input[i];
+
+    if (c != 'V' && c != 'v' && isalpha(c) != 0) {
+      if (check_existing(c, output) == 0) {
+        output[elements] = c;
+        elements++;
+      }
+    }
+  }
 }
 
 // Checks if the element exists in the given array
-int check_existing(char c, char *a, int elements) {
+int check_existing(char character, char *formula) {
   int i;
   int count = 0;
-  for (i = 0; i < elements; i++) {
-    if (a[i] == c) count++;
+  for (i = 0; i < (int)sizeof(formula) / sizeof(char); i++) {
+    if (formula[i] == character) count++;
   }
 
-  if (count == 0) {
-    return 0;
-  }
-
-  return 1;
+  return (count != 0);
 }
